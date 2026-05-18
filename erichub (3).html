@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>erichub</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --accent: #e8c96e;
+    --accent2: #ff4d4d;
+    --text: #f0f0f0;
+    --muted: #666666;
+    --card-bg: #141414;
+    --nav-h: 64px;
+    --bottom-h: 68px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body.locked { display: none; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── TOP NAV ── */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--nav-h);
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  #logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 4px;
+    color: var(--accent);
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+  #logo:hover { opacity: 0.75; }
+  #logout-badge {
+    position: absolute; right: 20px;
+    font-size: 0.7rem; color: var(--muted);
+    cursor: pointer;
+    text-decoration: underline;
+    display: none;
+  }
+  #logout-badge:hover { color: var(--accent2); }
+
+  /* ── PAGES ── */
+  .page {
+    display: none;
+    padding-top: var(--nav-h);
+    padding-bottom: var(--bottom-h);
+    min-height: 100vh;
+  }
+  .page.active { display: block; }
+
+  /* ── AUTH PAGE ── */
+  #page-auth {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding-top: 0; padding-bottom: 0;
+    min-height: 100vh;
+  }
+  #page-auth.active { display: flex; }
+
+  .auth-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px 40px;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+    animation: fadeUp 0.4s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .auth-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem; letter-spacing: 3px;
+    color: var(--accent); text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block; font-size: 0.75rem;
+    color: var(--muted); margin-bottom: 6px;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .form-group input {
+    width: 100%; padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text); font-size: 0.95rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-group input:focus { border-color: var(--accent); }
+
+  .btn-primary {
+    width: 100%; padding: 13px;
+    background: var(--accent); color: #0a0a0a;
+    border: none; border-radius: 8px;
+    font-size: 0.95rem; font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer; margin-top: 8px;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .auth-sub-links {
+    display: flex; justify-content: space-between;
+    margin-top: 18px;
+  }
+  .auth-sub-links button, .auth-sub-links a {
+    background: none; border: none;
+    color: var(--muted); font-size: 0.78rem;
+    cursor: pointer; text-decoration: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: color 0.2s;
+  }
+  .auth-sub-links button:hover, .auth-sub-links a:hover { color: var(--accent); }
+
+  .auth-msg {
+    margin-top: 14px; font-size: 0.82rem;
+    text-align: center; border-radius: 6px;
+    padding: 10px 14px;
+  }
+  .auth-msg.error { background: rgba(255,77,77,0.12); color: var(--accent2); }
+  .auth-msg.success { background: rgba(232,201,110,0.1); color: var(--accent); }
+  .auth-msg.info { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+  /* ── BOTTOM NAV ── */
+  #bottom-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--bottom-h);
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    flex-direction: row; align-items: stretch;
+  }
+  #bottom-nav.visible { display: flex; }
+
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px; cursor: pointer;
+    color: var(--muted);
+    border: none; background: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.68rem; letter-spacing: 0.5px;
+    transition: color 0.2s;
+    padding: 0;
+  }
+  .nav-item .nav-icon { font-size: 1.5rem; line-height: 1; }
+  .nav-item.active { color: var(--accent); }
+  .nav-item:hover { color: var(--text); }
+
+  /* ── FEED ── */
+  #page-feed {
+    padding-left: 0; padding-right: 0;
+  }
+  .feed-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .feed-header h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem; letter-spacing: 2px; color: var(--accent);
+  }
+  .feed-header p { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+  .video-card {
+    background: var(--card-bg);
+    cursor: pointer;
+    position: relative; overflow: hidden;
+    aspect-ratio: 16/9;
+    transition: opacity 0.2s;
+  }
+  .video-card:hover { opacity: 0.85; }
+  .video-card img, .video-card .thumb-placeholder {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .thumb-placeholder {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; background: var(--surface2);
+  }
+  .video-card .card-info {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 24px 14px 12px;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+  }
+  .card-info .card-title {
+    font-size: 0.85rem; font-weight: 500; line-height: 1.3;
+  }
+  .card-info .card-meta {
+    font-size: 0.7rem; color: var(--muted); margin-top: 3px;
+  }
+  .play-overlay {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(232,201,110,0.85);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; color: #0a0a0a;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .video-card:hover .play-overlay { opacity: 1; }
+
+  /* ── VIDEO MODAL ── */
+  #video-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92); z-index: 200;
+    align-items: center; justify-content: center;
+    flex-direction: column;
+    animation: fadeIn 0.2s ease;
+  }
+  #video-modal.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-inner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 92%; max-width: 900px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.8);
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #modal-video {
+    width: 100%; aspect-ratio: 16/9;
+    background: #000; display: block;
+  }
+  .modal-info {
+    padding: 14px 18px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-info h3 { font-size: 0.95rem; font-weight: 500; }
+  .modal-info p { font-size: 0.75rem; color: var(--muted); }
+  #modal-close {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); width: 36px; height: 36px;
+    border-radius: 8px; cursor: pointer; font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.2s;
+  }
+  #modal-close:hover { background: var(--accent2); }
+
+  /* ── ADMIN PAGE ── */
+  .admin-wrap { padding: 28px 20px; }
+  .admin-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 28px; overflow: hidden;
+  }
+  .admin-section-hd {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .admin-section-hd h3 {
+    font-size: 0.9rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--accent);
+  }
+  .badge {
+    background: var(--accent); color: #0a0a0a;
+    font-size: 0.65rem; font-weight: 700;
+    border-radius: 20px; padding: 2px 8px;
+  }
+
+  .admin-table { width: 100%; border-collapse: collapse; }
+  .admin-table th, .admin-table td {
+    padding: 13px 20px; text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .admin-table th {
+    color: var(--muted); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    font-size: 0.72rem;
+  }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-table tr:hover td { background: var(--surface2); }
+
+  .btn-accept, .btn-kick {
+    border: none; border-radius: 6px;
+    padding: 5px 14px; font-size: 0.75rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-accept { background: var(--accent); color: #0a0a0a; }
+  .btn-kick   { background: rgba(255,77,77,0.15); color: var(--accent2); border: 1px solid rgba(255,77,77,0.3); }
+  .btn-accept:hover, .btn-kick:hover { opacity: 0.75; }
+
+  .empty-row td {
+    text-align: center; color: var(--muted);
+    padding: 28px 20px; font-size: 0.82rem;
+  }
+
+  /* ── MODAL (generic) ── */
+  .gmodal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .gmodal-bg.open { display: flex; }
+  .gmodal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 36px 32px;
+    width: 92%; max-width: 380px;
+    animation: slideUp 0.25s ease;
+  }
+  .gmodal h3 {
+    font-size: 1rem; font-weight: 700; margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .gmodal .gm-btns {
+    display: flex; gap: 10px; margin-top: 20px;
+  }
+  .gmodal .gm-btns button {
+    flex: 1; padding: 11px;
+    border-radius: 8px; border: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .gm-cancel {
+    background: var(--surface2); border: 1px solid var(--border) !important;
+    color: var(--muted);
+  }
+  .gm-submit { background: var(--accent); color: #0a0a0a; }
+  .gm-cancel:hover, .gm-submit:hover { opacity: 0.78; }
+  .gm-msg { margin-top: 12px; font-size: 0.8rem; text-align: center; }
+  .gm-msg.error { color: var(--accent2); }
+  .gm-msg.success { color: var(--accent); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 80px 20px; gap: 12px;
+  }
+  .empty-state .es-icon { font-size: 3rem; }
+  .empty-state p { color: var(--muted); font-size: 0.85rem; }
+
+  /* ── SPINNER ── */
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 40px auto; display: block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── REELS specific ── */
+  #page-reels .video-grid .video-card { aspect-ratio: 9/16; max-width: 280px; }
+  #page-reels .video-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+  @media (max-width: 600px) {
+    .auth-box { padding: 36px 24px; }
+    .video-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body class="locked">
+
+<!-- ══════════════════════════════
+     TOP BAR
+══════════════════════════════ -->
+<header id="topbar">
+  <div id="logo">erichub</div>
+  <span id="logout-badge">로그아웃 ↗</span>
+</header>
+
+<!-- ══════════════════════════════
+     PAGE: AUTH
+══════════════════════════════ -->
+<section id="page-auth" class="page active">
+  <div class="auth-box" id="auth-login-box">
+    <div class="auth-title">erichub</div>
+    <div class="form-group">
+      <label>이메일</label>
+      <input id="login-email" type="email" placeholder="you@example.com" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label>비밀번호</label>
+      <input id="login-pw" type="password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn-primary" id="btn-login">로그인</button>
+    <div id="login-msg"></div>
+    <div class="auth-sub-links">
+      <button id="btn-go-register">회원가입</button>
+      <button id="btn-go-forgot">비밀번호를 잊으셨나요?</button>
+    </div>
+  </div>
+
+  <div class="auth-box" id="auth-register-box" style="display:none;">
+    <div class="auth-title" style="font-size:1.6rem;">가입 신청</div>
+    <div class="form-group">
+      <label>이름</label>
+      <input id="reg-name" type="text" placeholder="홍길동" />
+    </div>
+    <div class="form-group">
+      <label>이메일</label>
+      <input id="reg-email" type="email" placeholder="you@example.com" />
+    </div>
+    <div class="form-group">
+      <label>비밀번호</label>
+      <input id="reg-pw" type="password" placeholder="8자 이상" />
+    </div>
+    <button class="btn-primary" id="btn-register">가입 신청 제출</button>
+    <div id="reg-msg"></div>
+    <div class="auth-sub-links">
+      <button id="btn-back-login">← 로그인으로</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════
+     PAGE: FEED (일반영상)
+══════════════════════════════ -->
+<section id="page-feed" class="page">
+  <div class="feed-header">
+    <h2>📺 일반영상</h2>
+    <p>승인된 멤버 전용 영상 아카이브</p>
+  </div>
+  <div class="video-grid" id="grid-feed">
+    <div class="spinner"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════
+     PAGE: REELS
+══════════════════════════════ -->
+<section id="page-reels" class="page">
+  <div class="feed-header">
+    <h2>🔥 릴스</h2>
+    <p>숏폼 클립 모음</p>
+  </div>
+  <div class="video-grid" id="grid-reels">
+    <div class="spinner"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════
+     PAGE: ADMIN
+══════════════════════════════ -->
+<section id="page-admin" class="page">
+  <div class="admin-wrap">
+
+    <!-- 가입 승인 대기 -->
+    <div class="admin-section">
+      <div class="admin-section-hd">
+        <h3>⏳ 가입 승인 대기자</h3>
+        <span class="badge" id="badge-pending">0</span>
+      </div>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>이메일</th>
+            <th>신청일</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-pending">
+          <tr class="empty-row"><td colspan="4">대기자 없음</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 현재 멤버 -->
+    <div class="admin-section">
+      <div class="admin-section-hd">
+        <h3>✅ 등록된 멤버</h3>
+        <span class="badge" id="badge-members">0</span>
+      </div>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>이메일</th>
+            <th>가입일</th>
+            <th>역할</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-members">
+          <tr class="empty-row"><td colspan="5">멤버 없음</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════
+     BOTTOM NAV
+══════════════════════════════ -->
+<nav id="bottom-nav">
+  <button class="nav-item active" data-page="feed">
+    <span class="nav-icon">📺</span>일반영상
+  </button>
+  <button class="nav-item" data-page="reels">
+    <span class="nav-icon">🔥</span>릴스
+  </button>
+  <!-- 관리자 탭은 JS로 동적 삽입 -->
+</nav>
+
+<!-- ══════════════════════════════
+     VIDEO MODAL (YouTube iframe)
+══════════════════════════════ -->
+<div id="video-modal">
+  <div class="modal-inner">
+    <div style="position:relative;width:100%;aspect-ratio:16/9;background:#000;">
+      <iframe id="modal-iframe"
+        width="100%" height="100%"
+        style="position:absolute;top:0;left:0;border:none;"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+    <div class="modal-info">
+      <div>
+        <h3 id="modal-title"></h3>
+        <p id="modal-meta"></p>
+      </div>
+      <button id="modal-close">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     FORGOT PW MODAL
+══════════════════════════════ -->
+<div class="gmodal-bg" id="modal-forgot">
+  <div class="gmodal">
+    <h3>🔐 비밀번호 변경 요청</h3>
+    <div class="form-group">
+      <label>이름</label>
+      <input id="forgot-name" type="text" placeholder="홍길동" />
+    </div>
+    <div class="form-group">
+      <label>이메일</label>
+      <input id="forgot-email" type="email" placeholder="you@example.com" />
+    </div>
+    <div class="gm-btns">
+      <button class="gm-cancel" id="forgot-cancel">취소</button>
+      <button class="gm-submit" id="forgot-submit">요청 제출</button>
+    </div>
+    <div class="gm-msg" id="forgot-msg"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     FIREBASE SDKs
+══════════════════════════════ -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   0. DOMAIN ENTRY GUARD
+══════════════════════════════════════════════════════════ */
+(function () {
+  var answer = window.prompt('접근 코드를 입력하세요:');
+  if (answer !== 'eric@@@###(915)') {
+    window.location.replace('about:blank');
+    return;
+  }
+  document.body.classList.remove('locked');
+})();
+
+/* ══════════════════════════════════════════════════════════
+   1. FIREBASE INIT  ← 아래 firebaseConfig 값을 직접 채워주세요
+══════════════════════════════════════════════════════════ */
+var firebaseConfig = {
+  apiKey: "AIzaSyAfuW4lpUHwlckpirP_j2VBr4q9Xc9WfCI",
+  authDomain: "erichub-7ea3b.firebaseapp.com",
+  databaseURL: "https://erichub-7ea3b-default-rtdb.firebaseio.com",
+  projectId: "erichub-7ea3b",
+  storageBucket: "erichub-7ea3b.firebasestorage.app",
+  messagingSenderId: "246779078681",
+  appId: "1:246779078681:web:87c0ed117f34c379df2288"
+};
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db   = firebase.database();
+
+var ADMIN_EMAIL = 'ericlego3773@gmail.com';
+
+/* ══════════════════════════════════════════════════════════
+   2. SAMPLE VIDEO DATA  ← DB에서 불러오거나 여기서 직접 관리
+      각 객체에 실제 MP4 직링크를 url 필드에 입력하세요.
+══════════════════════════════════════════════════════════ */
+// ★ 여기에 유튜브 링크를 추가하세요!
+// url 자리에 유튜브 영상 주소를 넣으면 됩니다. (예: 'https://youtu.be/xxxxxx')
+// thumb 자리에 썸네일 이미지 주소를 넣거나 비워두세요.
+var SAMPLE_FEEDS = [
+  { id:'f1', title:'영상 제목 1', meta:'2025', url:'https://www.youtube.com/watch?v=dQw4w9WgXcQ', thumb:'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg' },
+  { id:'f2', title:'영상 제목 2', meta:'2025', url:'https://www.youtube.com/watch?v=9bZkp7q19f0', thumb:'https://img.youtube.com/vi/9bZkp7q19f0/hqdefault.jpg' },
+];
+var SAMPLE_REELS = [
+  { id:'r1', title:'릴스 클립 1', meta:'Shorts', url:'https://www.youtube.com/shorts/dQw4w9WgXcQ', thumb:'' },
+  { id:'r2', title:'릴스 클립 2', meta:'Shorts', url:'https://www.youtube.com/watch?v=9bZkp7q19f0', thumb:'' },
+];
+
+/* ══════════════════════════════════════════════════════════
+   3. DOM REFS
+══════════════════════════════════════════════════════════ */
+var $  = function(id){ return document.getElementById(id); };
+var pageAuth      = $('page-auth');
+var pageFeed      = $('page-feed');
+var pageReels     = $('page-reels');
+var pageAdmin     = $('page-admin');
+var bottomNav     = $('bottom-nav');
+var logoutBadge   = $('logout-badge');
+var videoModal    = $('video-modal');
+var modalIframe   = $('modal-iframe');
+var modalForgot   = $('modal-forgot');
+
+/* ══════════════════════════════════════════════════════════
+   4. PAGE SWITCHING
+══════════════════════════════════════════════════════════ */
+function showPage(id) {
+  [pageAuth, pageFeed, pageReels, pageAdmin].forEach(function(p){ p.classList.remove('active'); });
+  var el = document.getElementById('page-' + id);
+  if (el) el.classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.page === id);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   5. AUTH STATE
+══════════════════════════════════════════════════════════ */
+auth.onAuthStateChanged(function(user) {
+  if (!user) {
+    bottomNav.classList.remove('visible');
+    logoutBadge.style.display = 'none';
+    showAuthBox('login');
+    showPage('auth');
+    return;
+  }
+  // 관리자는 바로 통과
+  if (user.email === ADMIN_EMAIL) {
+    onLoginSuccess(user);
+    return;
+  }
+  // 일반 회원은 members 노드 확인
+  db.ref('members/' + uid(user.email)).once('value', function(snap) {
+    if (!snap.exists()) {
+      auth.signOut();
+      showMsg($('login-msg'), '승인되지 않은 계정입니다. 관리자의 승인을 기다려주세요.', 'error');
+      return;
+    }
+    onLoginSuccess(user);
+  });
+});
+
+function uid(email) {
+  return email.replace(/\./g, '_').replace(/@/g, '__at__');
+}
+
+function onLoginSuccess(user) {
+  logoutBadge.style.display = 'block';
+  buildBottomNav(user.email);
+  bottomNav.classList.add('visible');
+  renderFeed('feed', SAMPLE_FEEDS);
+  renderFeed('reels', SAMPLE_REELS);
+  showPage('feed');
+
+  if (user.email === ADMIN_EMAIL) {
+    listenAdminData();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   6. BOTTOM NAV BUILD
+══════════════════════════════════════════════════════════ */
+function buildBottomNav(email) {
+  bottomNav.innerHTML = '';
+  var tabs = [
+    { page:'feed',  icon:'📺', label:'일반영상' },
+    { page:'reels', icon:'🔥', label:'릴스' },
+  ];
+  if (email === ADMIN_EMAIL) {
+    tabs.push({ page:'admin', icon:'👑', label:'관리자' });
+  }
+  tabs.forEach(function(t){
+    var btn = document.createElement('button');
+    btn.className = 'nav-item' + (t.page === 'feed' ? ' active' : '');
+    btn.dataset.page = t.page;
+    btn.innerHTML = '<span class="nav-icon">' + t.icon + '</span>' + t.label;
+    btn.addEventListener('click', function(){ showPage(t.page); });
+    bottomNav.appendChild(btn);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   7. LOGIN
+══════════════════════════════════════════════════════════ */
+$('btn-login').addEventListener('click', function(){
+  var email = $('login-email').value.trim();
+  var pw    = $('login-pw').value;
+  if (!email || !pw) { showMsg($('login-msg'), '이메일과 비밀번호를 입력하세요.', 'error'); return; }
+
+  // Admin bypass
+  if (email === ADMIN_EMAIL) {
+    auth.signInWithEmailAndPassword(email, pw)
+      .catch(function(e){ showMsg($('login-msg'), e.message, 'error'); });
+    return;
+  }
+
+  // Check approved
+  db.ref('members/' + uid(email)).once('value', function(snap){
+    if (!snap.exists()) {
+      showMsg($('login-msg'), '승인되지 않은 계정입니다.', 'error');
+      return;
+    }
+    auth.signInWithEmailAndPassword(email, pw)
+      .catch(function(e){ showMsg($('login-msg'), e.message, 'error'); });
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   8. REGISTER REQUEST
+══════════════════════════════════════════════════════════ */
+$('btn-register').addEventListener('click', function(){
+  var name  = $('reg-name').value.trim();
+  var email = $('reg-email').value.trim();
+  var pw    = $('reg-pw').value;
+  if (!name || !email || !pw) { showMsg($('reg-msg'), '모든 필드를 입력하세요.', 'error'); return; }
+  if (pw.length < 8) { showMsg($('reg-msg'), '비밀번호는 8자 이상이어야 합니다.', 'error'); return; }
+
+  // Simple hash (SHA-256 via SubtleCrypto) before storing
+  hashPassword(pw).then(function(hashed){
+    var key = uid(email);
+    db.ref('join_requests/' + key).set({
+      name: name,
+      email: email,
+      password_hash: hashed,
+      status: 'pending',
+      requested_at: new Date().toISOString()
+    }).then(function(){
+      showMsg($('reg-msg'), '신청이 완료되었습니다. 관리자의 승인을 기다려주세요.', 'success');
+      $('reg-name').value = '';
+      $('reg-email').value = '';
+      $('reg-pw').value = '';
+    }).catch(function(e){
+      showMsg($('reg-msg'), '오류: ' + e.message, 'error');
+    });
+  });
+});
+
+async function hashPassword(pw) {
+  var enc = new TextEncoder();
+  var buf = await crypto.subtle.digest('SHA-256', enc.encode(pw));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   9. FORGOT PASSWORD
+══════════════════════════════════════════════════════════ */
+$('btn-go-forgot').addEventListener('click', function(){ modalForgot.classList.add('open'); });
+$('forgot-cancel').addEventListener('click', function(){ modalForgot.classList.remove('open'); });
+$('forgot-submit').addEventListener('click', function(){
+  var name  = $('forgot-name').value.trim();
+  var email = $('forgot-email').value.trim();
+  if (!name || !email) { showGmMsg('forgot-msg', '이름과 이메일을 입력하세요.', 'error'); return; }
+  db.ref('pw_reset_requests/' + uid(email)).set({
+    name: name,
+    email: email,
+    requested_at: new Date().toISOString(),
+    status: 'pending'
+  }).then(function(){
+    showGmMsg('forgot-msg', '요청이 접수되었습니다. 관리자가 확인 후 연락드립니다.', 'success');
+    setTimeout(function(){ modalForgot.classList.remove('open'); $('forgot-msg').textContent=''; }, 2500);
+  }).catch(function(e){ showGmMsg('forgot-msg', '오류: ' + e.message, 'error'); });
+});
+
+/* ══════════════════════════════════════════════════════════
+   10. LOGOUT
+══════════════════════════════════════════════════════════ */
+logoutBadge.addEventListener('click', function(){ auth.signOut(); });
+$('logo').addEventListener('click', function(){
+  if (auth.currentUser) { auth.signOut(); }
+});
+
+/* ══════════════════════════════════════════════════════════
+   11. VIDEO FEED RENDER
+══════════════════════════════════════════════════════════ */
+function renderFeed(type, items) {
+  var gridId = type === 'feed' ? 'grid-feed' : 'grid-reels';
+  var grid = $(gridId);
+  grid.innerHTML = '';
+
+  if (!items || items.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="es-icon">🎬</div><p>영상이 없습니다.</p></div>';
+    return;
+  }
+
+  items.forEach(function(v){
+    var card = document.createElement('div');
+    card.className = 'video-card';
+    card.innerHTML =
+      (v.thumb
+        ? '<img src="' + v.thumb + '" alt="' + v.title + '" loading="lazy" />'
+        : '<div class="thumb-placeholder">🎬</div>') +
+      '<div class="play-overlay">▶</div>' +
+      '<div class="card-info">' +
+        '<div class="card-title">' + v.title + '</div>' +
+        '<div class="card-meta">' + v.meta + '</div>' +
+      '</div>';
+
+    card.addEventListener('click', function(){ openVideoModal(v); });
+    grid.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   12. VIDEO MODAL
+══════════════════════════════════════════════════════════ */
+function getYouTubeId(url) {
+  var match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
+  return match ? match[1] : null;
+}
+
+function openVideoModal(v) {
+  var ytId = getYouTubeId(v.url);
+  if (ytId) {
+    modalIframe.src = 'https://www.youtube.com/embed/' + ytId + '?autoplay=1&rel=0';
+  } else {
+    // 유튜브가 아닌 경우 직접 URL 시도
+    modalIframe.src = v.url;
+  }
+  $('modal-title').textContent = v.title;
+  $('modal-meta').textContent  = v.meta;
+  videoModal.classList.add('open');
+}
+
+function closeVideoModal() {
+  videoModal.classList.remove('open');
+  modalIframe.src = '';
+}
+
+$('modal-close').addEventListener('click', closeVideoModal);
+videoModal.addEventListener('click', function(e){
+  if (e.target === videoModal) closeVideoModal();
+});
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') closeVideoModal();
+});
+
+/* ══════════════════════════════════════════════════════════
+   13. ADMIN — REALTIME LISTENERS
+══════════════════════════════════════════════════════════ */
+var pendingRef  = null;
+var membersRef  = null;
+
+function listenAdminData() {
+  pendingRef = db.ref('join_requests').orderByChild('status').equalTo('pending');
+  pendingRef.on('value', function(snap){
+    var list = [];
+    snap.forEach(function(child){ list.push(Object.assign({ _key: child.key }, child.val())); });
+    renderPendingTable(list);
+    $('badge-pending').textContent = list.length;
+  });
+
+  membersRef = db.ref('members');
+  membersRef.on('value', function(snap){
+    var list = [];
+    snap.forEach(function(child){ list.push(Object.assign({ _key: child.key }, child.val())); });
+    renderMembersTable(list);
+    $('badge-members').textContent = list.length;
+  });
+}
+
+function renderPendingTable(list) {
+  var tbody = $('tbody-pending');
+  tbody.innerHTML = '';
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">대기자 없음</td></tr>';
+    return;
+  }
+  list.forEach(function(item){
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + (item.name || '—') + '</td>' +
+      '<td>' + item.email + '</td>' +
+      '<td>' + (item.requested_at ? item.requested_at.slice(0,10) : '—') + '</td>' +
+      '<td><button class="btn-accept">수락</button></td>';
+    tr.querySelector('.btn-accept').addEventListener('click', function(){ acceptMember(item); });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderMembersTable(list) {
+  var tbody = $('tbody-members');
+  tbody.innerHTML = '';
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">멤버 없음</td></tr>';
+    return;
+  }
+  list.forEach(function(item){
+    if (item.email === ADMIN_EMAIL) return; // admin not kickable from UI
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + (item.name || '—') + '</td>' +
+      '<td>' + item.email + '</td>' +
+      '<td>' + (item.joined_at ? item.joined_at.slice(0,10) : '—') + '</td>' +
+      '<td>' + (item.role || 'member') + '</td>' +
+      '<td><button class="btn-kick">추방</button></td>';
+    tr.querySelector('.btn-kick').addEventListener('click', function(){ kickMember(item); });
+    tbody.appendChild(tr);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   14. ADMIN — ACCEPT MEMBER
+   Firebase Admin SDK는 클라이언트에서 사용 불가하므로,
+   수락 시 join_requests 항목을 members 노드로 이관합니다.
+   실제 Firebase Auth 계정 생성은 수락된 사용자가 이미 신청한
+   이메일+비밀번호(해시)로 직접 로그인 시도할 수 없으므로,
+   관리자가 Firebase Console 또는 Cloud Function으로 계정을 만든 뒤
+   members 노드에 등록하는 방식을 권장합니다.
+   여기서는 members 노드 등록 + join_requests 삭제를 수행합니다.
+══════════════════════════════════════════════════════════ */
+function acceptMember(item) {
+  var key = item._key;
+  var updates = {};
+  updates['members/' + key] = {
+    name: item.name || '',
+    email: item.email,
+    role: 'member',
+    joined_at: new Date().toISOString()
+  };
+  updates['join_requests/' + key] = null;
+
+  db.ref().update(updates).then(function(){
+    // Try to create Auth account using stored hash is not possible client-side.
+    // The admin should create the Firebase Auth account via Console / Cloud Function.
+    alert('멤버 등록 완료: ' + item.email + '\n⚠️ Firebase Console에서 동일 이메일로 Auth 계정도 생성해주세요.');
+  }).catch(function(e){ alert('오류: ' + e.message); });
+}
+
+/* ══════════════════════════════════════════════════════════
+   15. ADMIN — KICK MEMBER
+══════════════════════════════════════════════════════════ */
+function kickMember(item) {
+  if (!confirm(item.email + ' 을(를) 추방하시겠습니까?')) return;
+  db.ref('members/' + item._key).remove().then(function(){
+    // Firebase Auth 계정 삭제는 Admin SDK 필요 (Cloud Function 연동 권장)
+    // 여기서는 DB 권한만 삭제하여 로그인 후 members 노드 미존재로 차단됩니다.
+    alert('추방 완료: ' + item.email + '\n⚠️ Firebase Console에서 Auth 계정도 삭제해주세요.');
+  }).catch(function(e){ alert('오류: ' + e.message); });
+}
+
+/* ══════════════════════════════════════════════════════════
+   16. AUTH BOX SWITCHING
+══════════════════════════════════════════════════════════ */
+function showAuthBox(which) {
+  $('auth-login-box').style.display    = which === 'login'    ? '' : 'none';
+  $('auth-register-box').style.display = which === 'register' ? '' : 'none';
+}
+
+$('btn-go-register').addEventListener('click', function(){ showAuthBox('register'); });
+$('btn-back-login').addEventListener('click',  function(){ showAuthBox('login'); });
+
+/* ══════════════════════════════════════════════════════════
+   17. HELPERS
+══════════════════════════════════════════════════════════ */
+function showMsg(el, text, type) {
+  el.className = 'auth-msg ' + type;
+  el.textContent = text;
+}
+function showGmMsg(id, text, type) {
+  var el = $(id);
+  el.className = 'gm-msg ' + type;
+  el.textContent = text;
+}
+</script>
+</body>
+</html>
