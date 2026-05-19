@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERICHUB</title>
+
+<!-- Firebase SDK (compat version - CDN) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+/* ──────────── VARIABLES ──────────── */
+:root {
+  --bg:      #07070d;
+  --bg2:     #0f0f18;
+  --bg3:     #16161f;
+  --bg4:     #1c1c28;
+  --accent:  #e63946;
+  --accent2: #ff6b6b;
+  --gold:    #ffd166;
+  --text:    #f2f2f5;
+  --text2:   #7a7a9a;
+  --border:  #252535;
+  --card:    #111119;
+  --success: #06d6a0;
+  --warn:    #ffd166;
+  --radius:  10px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ──────────── GATE ──────────── */
+#gate {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+  transition: opacity .5s;
+}
+.gate-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(230,57,70,.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.gate-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(64px, 14vw, 130px);
+  letter-spacing: 10px; line-height: 1;
+  color: var(--text);
+  position: relative; z-index:1;
+}
+.gate-logo em { color: var(--accent); font-style: normal; }
+.gate-sub {
+  font-size: 11px; letter-spacing: 5px; color: var(--text2);
+  text-transform: uppercase; position: relative; z-index:1;
+}
+.gate-form {
+  display: flex; flex-direction: column; gap: 10px;
+  width: min(340px, 88vw); position: relative; z-index:1;
+  margin-top: 10px;
+}
+.gate-input {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); padding: 14px 18px;
+  font-size: 15px; font-family: inherit;
+  border-radius: 8px; text-align: center;
+  letter-spacing: 2px; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.gate-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(230,57,70,.12);
+}
+.gate-input::placeholder { color: var(--text2); letter-spacing: 0; font-size: 13px; }
+.gate-btn {
+  background: var(--accent); color: #fff; border: none;
+  padding: 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  letter-spacing: 3px; cursor: pointer;
+  transition: background .2s, transform .1s;
+}
+.gate-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+.gate-err { color: var(--accent); font-size: 12px; text-align: center; min-height: 16px; }
+
+/* ──────────── AUTH MODAL ──────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 8888;
+  background: rgba(0,0,0,.8); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 40px 36px;
+  width: min(420px, 92vw); position: relative;
+  animation: fadeUp .25s ease;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.modal-x {
+  position: absolute; top:14px; right:16px;
+  background:none; border:none; color:var(--text2);
+  font-size:22px; cursor:pointer; line-height:1;
+  transition: color .2s;
+}
+.modal-x:hover { color: var(--text); }
+.modal-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 30px; letter-spacing: 3px; margin-bottom: 22px;
+}
+.modal-logo em { color: var(--accent); font-style: normal; }
+.auth-tabs { display:flex; border-bottom: 1px solid var(--border); margin-bottom:22px; }
+.auth-tab {
+  background:none; border:none; color:var(--text2);
+  padding: 10px 22px; font-size:14px; font-family:inherit;
+  cursor:pointer; border-bottom: 2px solid transparent;
+  margin-bottom:-1px; transition: all .2s;
+}
+.auth-tab.on { color:var(--accent); border-bottom-color:var(--accent); }
+.fg { margin-bottom:13px; }
+.fg label { display:block; font-size:11px; color:var(--text2); margin-bottom:5px; letter-spacing:1px; text-transform:uppercase; }
+.fg input {
+  width:100%; background:var(--bg3); border:1px solid var(--border);
+  color:var(--text); padding:11px 14px; border-radius:7px;
+  font-size:14px; font-family:inherit; outline:none;
+  transition: border-color .2s;
+}
+.fg input:focus { border-color: var(--accent); }
+.submit-btn {
+  width:100%; background:var(--accent); color:#fff; border:none;
+  padding:13px; border-radius:7px; font-size:14px;
+  font-weight:700; font-family:inherit; cursor:pointer;
+  margin-top:6px; transition: background .2s;
+}
+.submit-btn:hover { background: var(--accent2); }
+.auth-msg { font-size:12px; text-align:center; margin-top:10px; min-height:16px; }
+.auth-msg.ok  { color: var(--success); }
+.auth-msg.err { color: var(--accent); }
+
+/* ──────────── HEADER ──────────── */
+#app { display:none; min-height:100vh; flex-direction:column; }
+#app.on { display:flex; }
+
+header {
+  background: rgba(15,15,24,.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 22px; height: 58px;
+  display: flex; align-items: center; gap: 16px;
+  position: sticky; top:0; z-index:500;
+}
+.h-logo {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:26px; letter-spacing:4px;
+  color:var(--text); text-decoration:none; flex-shrink:0;
+}
+.h-logo em { color:var(--accent); font-style:normal; }
+
+.search-wrap {
+  flex:1; max-width:560px;
+  display:flex; position:relative;
+}
+.search-wrap input {
+  flex:1; background:var(--bg3);
+  border: 1px solid var(--border); border-right:none;
+  color:var(--text); padding:9px 16px;
+  font-size:14px; font-family:inherit;
+  border-radius:8px 0 0 8px; outline:none;
+  transition: border-color .2s;
+}
+.search-wrap input:focus { border-color:var(--accent); }
+.search-btn {
+  background:var(--accent); border:none; color:#fff;
+  padding:0 18px; border-radius:0 8px 8px 0;
+  font-size:17px; cursor:pointer; transition:background .2s;
+}
+.search-btn:hover { background:var(--accent2); }
+
+.h-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.chip {
+  display:flex; align-items:center; gap:6px;
+  font-size:13px; color:var(--text2);
+}
+.chip-dot { width:7px; height:7px; border-radius:50%; background:var(--success); flex-shrink:0; }
+.hbtn {
+  background:none; border:1px solid var(--border);
+  color:var(--text2); padding:7px 14px; border-radius:7px;
+  font-size:12px; font-family:inherit; cursor:pointer;
+  transition: all .2s; white-space:nowrap;
+}
+.hbtn:hover { border-color:var(--accent); color:var(--accent); }
+.hbtn.red { background:var(--accent); border-color:var(--accent); color:#fff; }
+.hbtn.red:hover { background:var(--accent2); border-color:var(--accent2); }
+
+/* ──────────── TABS BAR ──────────── */
+.tabs-nav {
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:0 22px; display:flex; gap:2px;
+}
+.ntab {
+  background:none; border:none; color:var(--text2);
+  padding:13px 18px; font-size:14px; font-weight:500;
+  font-family:inherit; cursor:pointer;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+  transition: all .2s;
+}
+.ntab:hover { color:var(--text); }
+.ntab.on { color:var(--text); border-bottom-color:var(--accent); }
+
+/* ──────────── MAIN ──────────── */
+.main-content {
+  flex:1; padding:26px 22px;
+  max-width:1440px; margin:0 auto; width:100%;
+}
+
+/* ──────────── SEARCH HINT ──────────── */
+.search-hint {
+  text-align:center; padding:80px 20px;
+}
+.hint-big {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(48px,8vw,90px);
+  color:var(--border); letter-spacing:6px; line-height:1;
+}
+.hint-sub { font-size:14px; color:var(--text2); margin-top:12px; }
+
+/* Trending label */
+.section-label {
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:18px;
+}
+.section-label h2 {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:22px; letter-spacing:3px; color:var(--text2);
+}
+.section-label span {
+  font-size:11px; color:var(--text2); letter-spacing:1px;
+  padding:3px 10px; border:1px solid var(--border); border-radius:20px;
+}
+
+/* ──────────── VIDEO GRID ──────────── */
+.vgrid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+  gap:18px;
+}
+.rgrid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+  gap:14px;
+}
+
+.vcard {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); overflow:hidden;
+  cursor:pointer; transition: transform .2s, border-color .2s, box-shadow .2s;
+}
+.vcard:hover {
+  transform:translateY(-4px); border-color: var(--accent);
+  box-shadow: 0 10px 36px rgba(230,57,70,.12);
+}
+.vthumb { position:relative; padding-top:56.25%; background:var(--bg3); overflow:hidden; }
+.vthumb.shorts { padding-top:177%; }
+.vthumb img {
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; transition:transform .3s;
+}
+.vcard:hover .vthumb img { transform:scale(1.06); }
+.play-ov {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,.45);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .2s;
+}
+.vcard:hover .play-ov { opacity:1; }
+.play-ov svg { width:46px; height:46px; }
+
+.vinfo { padding:11px 13px; }
+.vtitle {
+  font-size:13px; font-weight:500; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2;
+  -webkit-box-orient:vertical; overflow:hidden;
+  margin-bottom:5px;
+}
+.vmeta { font-size:11px; color:var(--text2); }
+.vviews { font-size:11px; color:var(--text2); margin-top:2px; }
+
+/* ──────────── LOADING ──────────── */
+.loading-wrap { display:none; text-align:center; padding:60px 20px; }
+.spinner {
+  width:34px; height:34px; border-radius:50%;
+  border:3px solid var(--border); border-top-color:var(--accent);
+  animation:spin .65s linear infinite; margin:0 auto 14px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-wrap p { font-size:13px; color:var(--text2); }
+
+/* ──────────── PLAYER MODAL ──────────── */
+#player-modal {
+  display:none; position:fixed; inset:0; z-index:7000;
+  background:rgba(0,0,0,.93); backdrop-filter:blur(10px);
+  align-items:center; justify-content:center;
+  flex-direction:column; padding:20px;
+}
+#player-modal.open { display:flex; }
+.pw { width:min(920px,100%); position:relative; }
+.pcl {
+  position:absolute; top:-40px; right:0;
+  background:none; border:none; color:#fff;
+  font-size:28px; cursor:pointer; transition:color .2s;
+}
+.pcl:hover { color:var(--accent); }
+.pframe { position:relative; padding-top:56.25%; border-radius:10px; overflow:hidden; background:#000; }
+.pframe iframe { position:absolute; inset:0; width:100%; height:100%; border:none; }
+.pinfo { margin-top:14px; max-width:920px; width:100%; }
+.pinfo h3 { font-size:17px; font-weight:500; line-height:1.4; }
+.pinfo p  { font-size:12px; color:var(--text2); margin-top:4px; }
+
+/* ──────────── PENDING SCREEN ──────────── */
+#pending-screen {
+  display:none; text-align:center; padding:80px 20px;
+}
+#pending-screen .icon { font-size:52px; margin-bottom:14px; }
+#pending-screen h2 { font-size:22px; margin-bottom:8px; color:var(--warn); }
+#pending-screen p  { font-size:14px; color:var(--text2); }
+
+/* ──────────── ADMIN PANEL ──────────── */
+.admin-title {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:34px; letter-spacing:3px; margin-bottom:22px;
+}
+.admin-title em { color:var(--accent); font-style:normal; }
+.asec {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:22px; margin-bottom:16px;
+}
+.asec-h {
+  font-size:12px; font-weight:700; letter-spacing:1.5px;
+  color:var(--text2); text-transform:uppercase;
+  margin-bottom:14px; padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.api-row { display:flex; gap:8px; }
+.api-row input {
+  flex:1; background:var(--bg3); border:1px solid var(--border);
+  color:var(--text); padding:10px 14px; border-radius:7px;
+  font-size:13px; font-family:inherit; outline:none;
+}
+.api-row input:focus { border-color:var(--accent); }
+.save-btn {
+  background:var(--accent); border:none; color:#fff;
+  padding:10px 18px; border-radius:7px; font-size:13px;
+  font-family:inherit; cursor:pointer; transition:background .2s;
+}
+.save-btn:hover { background:var(--accent2); }
+.api-st { font-size:11px; color:var(--text2); margin-top:6px; }
+
+.mlist { display:flex; flex-direction:column; gap:8px; }
+.mrow {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 14px; background:var(--bg3);
+  border:1px solid var(--border); border-radius:8px;
+}
+.mname { flex:1; font-size:13px; }
+.memail { font-size:11px; color:var(--text2); }
+.mbadge {
+  font-size:11px; padding:3px 10px; border-radius:20px;
+  font-weight:600; flex-shrink:0;
+}
+.b-pending  { background:rgba(255,209,102,.1); color:var(--warn); }
+.b-approved { background:rgba(6,214,160,.1);   color:var(--success); }
+.b-admin    { background:rgba(230,57,70,.1);    color:var(--accent); }
+.b-denied   { background:rgba(122,122,154,.1);  color:var(--text2); }
+.mbts { display:flex; gap:5px; flex-shrink:0; }
+.mbt {
+  padding:4px 10px; border-radius:5px; font-size:11px;
+  border:1px solid; cursor:pointer; font-family:inherit;
+  transition: all .15s; background:none;
+}
+.mbt-ok  { border-color:var(--success); color:var(--success); }
+.mbt-ok:hover  { background:var(--success); color:#000; }
+.mbt-del { border-color:var(--accent); color:var(--accent); }
+.mbt-del:hover { background:var(--accent); color:#fff; }
+
+.empty-msg { font-size:13px; color:var(--text2); text-align:center; padding:20px; }
+
+/* ──────────── PAGINATION ──────────── */
+.pgn { display:flex; justify-content:center; gap:8px; margin-top:28px; }
+.pgn-btn {
+  background:var(--bg3); border:1px solid var(--border);
+  color:var(--text); padding:8px 18px; border-radius:7px;
+  font-size:13px; font-family:inherit; cursor:pointer;
+  transition: all .2s;
+}
+.pgn-btn:hover { border-color:var(--accent); color:var(--accent); }
+.pgn-btn:disabled { opacity:.35; cursor:default; }
+
+/* ──────────── RESPONSIVE ──────────── */
+@media (max-width:640px) {
+  header { padding:0 12px; gap:10px; height:52px; }
+  .h-logo { font-size:20px; }
+  .search-wrap input { font-size:13px; padding:8px 10px; }
+  .main-content { padding:16px 12px; }
+  .vgrid { grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:10px; }
+  .rgrid { grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap:10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ GATE ══ -->
+<div id="gate">
+  <div class="gate-bg"></div>
+  <div class="gate-logo">ERIC<em>HUB</em></div>
+  <div class="gate-sub">Private · Members Only</div>
+  <div class="gate-form">
+    <input class="gate-input" id="gateInput" type="password"
+      placeholder="진입 코드를 입력하세요" autocomplete="off"
+      onkeydown="if(event.key==='Enter')checkGate()">
+    <button class="gate-btn" onclick="checkGate()">입 장</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- ══ AUTH MODAL ══ -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal-box">
+    <button class="modal-x" onclick="closeAuth()">✕</button>
+    <div class="modal-logo">ERIC<em>HUB</em></div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" onclick="authTab('login',this)">로그인</button>
+      <button class="auth-tab" onclick="authTab('reg',this)">회원가입</button>
+    </div>
+
+    <!-- login -->
+    <div id="pLogin">
+      <div class="fg"><label>이메일</label><input id="lEmail" type="email" placeholder="email@example.com"></div>
+      <div class="fg"><label>비밀번호</label><input id="lPw" type="password" placeholder="비밀번호"></div>
+      <button class="submit-btn" onclick="doLogin()">로그인</button>
+      <div class="auth-msg" id="lMsg"></div>
+    </div>
+
+    <!-- register -->
+    <div id="pReg" style="display:none">
+      <div class="fg"><label>이메일</label><input id="rEmail" type="email" placeholder="email@example.com"></div>
+      <div class="fg"><label>이름 / 닉네임</label><input id="rName" type="text" placeholder="표시될 이름"></div>
+      <div class="fg"><label>비밀번호</label><input id="rPw" type="password" placeholder="6자 이상"></div>
+      <button class="submit-btn" onclick="doRegister()">가입 신청</button>
+      <div class="auth-msg" id="rMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PLAYER MODAL ══ -->
+<div id="player-modal">
+  <div class="pw">
+    <button class="pcl" onclick="closePlayer()">✕</button>
+    <div class="pframe"><iframe id="ytFrame" allowfullscreen allow="autoplay;encrypted-media"></iframe></div>
+    <div class="pinfo">
+      <h3 id="pTitle"></h3>
+      <p  id="pCh"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <header>
+    <a class="h-logo" href="#">ERIC<em>HUB</em></a>
+    <div class="search-wrap">
+      <input id="searchInput" type="text" placeholder="유튜브 영상 검색..."
+        onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" onclick="doSearch()">🔍</button>
+    </div>
+    <div class="h-right">
+      <div class="chip" id="userChip" style="display:none">
+        <div class="chip-dot"></div>
+        <span id="uName"></span>
+      </div>
+      <button class="hbtn" id="btnLogin" onclick="openAuth()">로그인</button>
+      <button class="hbtn red" id="btnAdmin" style="display:none" onclick="goAdmin()">관리자</button>
+      <button class="hbtn" id="btnLogout" style="display:none" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <div class="tabs-nav">
+    <button class="ntab on" id="tabVideo" onclick="switchTab('video',this)">📹 일반영상</button>
+    <button class="ntab" id="tabShorts" onclick="switchTab('shorts',this)">⚡ 쇼츠/릴스</button>
+    <button class="ntab" id="tabAdmin" style="display:none" onclick="switchTab('admin',this)">⚙️ 관리자</button>
+  </div>
+
+  <div class="main-content">
+
+    <!-- ── VIDEO TAB ── -->
+    <div id="pageVideo">
+      <div id="vHint" class="search-hint">
+        <div class="hint-big">SEARCH</div>
+        <div class="hint-sub">검색창에서 유튜브 영상을 자유롭게 찾아보세요</div>
+      </div>
+      <div id="vTrend" style="display:none">
+        <div class="section-label"><h2>🔥 인기 급상승</h2><span>KR</span></div>
+        <div class="vgrid" id="trendGrid"></div>
+      </div>
+      <div class="loading-wrap" id="vLoad"><div class="spinner"></div><p>검색 중...</p></div>
+      <div class="vgrid" id="vGrid"></div>
+      <div class="pgn" id="vPgn" style="display:none">
+        <button class="pgn-btn" id="vPrev" onclick="changePage(-1)">◀ 이전</button>
+        <button class="pgn-btn" id="vNext" onclick="changePage(1)">다음 ▶</button>
+      </div>
+    </div>
+
+    <!-- ── SHORTS TAB ── -->
+    <div id="pageShorts" style="display:none">
+      <div id="sHint" class="search-hint">
+        <div class="hint-big">SHORTS</div>
+        <div class="hint-sub">쇼츠 / 릴스 영상을 검색해보세요</div>
+      </div>
+      <div class="loading-wrap" id="sLoad"><div class="spinner"></div><p>검색 중...</p></div>
+      <div class="rgrid" id="sGrid"></div>
+      <div class="pgn" id="sPgn" style="display:none">
+        <button class="pgn-btn" id="sPrev" onclick="changePage(-1,'s')">◀ 이전</button>
+        <button class="pgn-btn" id="sNext" onclick="changePage(1,'s')">다음 ▶</button>
+      </div>
+    </div>
+
+    <!-- ── PENDING ── -->
+    <div id="pending-screen">
+      <div class="icon">⏳</div>
+      <h2>승인 대기 중</h2>
+      <p>관리자가 계정을 확인 중입니다.<br>승인 완료 후 모든 기능을 이용할 수 있어요.</p>
+    </div>
+
+    <!-- ── ADMIN TAB ── -->
+    <div id="pageAdmin" style="display:none">
+      <div class="admin-title">ADMIN <em>PANEL</em></div>
+
+      <div class="asec">
+        <div class="asec-h">🔑 YouTube API 키</div>
+        <div class="api-row">
+          <input id="apiKeyInput" type="text" placeholder="YouTube Data API v3 키">
+          <button class="save-btn" onclick="saveApiKey()">저장</button>
+        </div>
+        <div class="api-st" id="apiSt"></div>
+      </div>
+
+      <div class="asec">
+        <div class="asec-h">⏳ 가입 승인 대기 <span id="pendBadge" style="color:var(--accent)"></span></div>
+        <div class="mlist" id="pendList"><div class="empty-msg">대기 중인 회원 없음</div></div>
+      </div>
+
+      <div class="asec">
+        <div class="asec-h">👥 전체 멤버</div>
+        <div class="mlist" id="allList"><div class="empty-msg">불러오는 중...</div></div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════════════════
+//  ⚙️  설정
+// ══════════════════════════════════════════════════════
+const CFG = {
+  GATE:         'eric@@@###(915)',
+  ADMIN_EMAIL:  'ericlego3773@gmail.com',
+  WORKER_URL:   'https://erichub-proxy.ericlego3773.workers.dev',  // ← Worker URL
+  FIREBASE: {
+    apiKey:            "AIzaSyAfuW4lpUHwlckpirP_j2VBr4q9Xc9WfCI",
+    authDomain:        "erichub-7ea3b.firebaseapp.com",
+    databaseURL:       "https://erichub-7ea3b-default-rtdb.firebaseio.com",
+    projectId:         "erichub-7ea3b",
+    storageBucket:     "erichub-7ea3b.firebasestorage.app",
+    messagingSenderId: "246779078681",
+    appId:             "1:246779078681:web:87c0ed117f34c379df2288"
+  }
+};
+
+// ══ Firebase init ══
+firebase.initializeApp(CFG.FIREBASE);
+const auth = firebase.auth();
+const db   = firebase.database();
+
+let me = null, meData = null;
+let vPageTokens = [''], vPage = 0;
+let sPageTokens = [''], sPage = 0;
+let lastVQuery = '', lastSQuery = '';
+let curTab = 'video';
+
+// ══ Gate ══
+if (sessionStorage.getItem('eh_gate') === '1') afterGate();
+
+function checkGate() {
+  const val = document.getElementById('gateInput').value.trim();
+  if (val === CFG.GATE) {
+    sessionStorage.setItem('eh_gate', '1');
+    const g = document.getElementById('gate');
+    g.style.opacity = '0';
+    g.style.transition = 'opacity .45s';
+    setTimeout(afterGate, 460);
+  } else {
+    const e = document.getElementById('gateErr');
+    e.textContent = '코드가 올바르지 않습니다';
+    setTimeout(() => e.textContent = '', 2000);
+  }
+}
+document.getElementById('gateInput').onkeydown = e => { if(e.key==='Enter') checkGate(); };
+
+// 게이트 통과 후: 앱 껍데기 보여주되 콘텐츠는 로그인 전까지 잠금
+function afterGate() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').classList.add('on');
+  // 로그인 안 된 상태면 로그인 모달 강제 오픈
+  if (!me) {
+    showLoginWall();
+  }
+}
+
+// 로그인 유도 화면 (모달 닫기 불가 버전)
+function showLoginWall() {
+  const modal = document.getElementById('authModal');
+  modal.classList.add('open');
+  // X 버튼 숨기기 (로그인 강제)
+  modal.querySelector('.modal-x').style.display = 'none';
+  // 배경 클릭으로도 닫히지 않게
+  modal.onclick = null;
+}
+
+function revealApp() {
+  // 로그인+승인 완료 후 실제 콘텐츠 표시
+  const modal = document.getElementById('authModal');
+  modal.classList.remove('open');
+  // X 버튼 다시 보이기
+  modal.querySelector('.modal-x').style.display = '';
+  // 배경 클릭 닫기 복구
+  modal.onclick = e => { if(e.target===modal) closeAuth(); };
+  loadTrending();
+}
+
+// ══ Auth state ══
+auth.onAuthStateChanged(async u => {
+  if (u) {
+    me = u;
+    const s = await db.ref('users/'+u.uid).once('value');
+    meData = s.val();
+    updateUI();
+    if (u.email === CFG.ADMIN_EMAIL) {
+      // 관리자: DB 정보 없어도 통과, 없으면 자동 생성
+      if (!meData) {
+        await db.ref('users/' + u.uid).set({
+          email: u.email, name: 'Eric', status: 'admin', createdAt: Date.now()
+        });
+        meData = { email: u.email, name: 'Eric', status: 'admin' };
+      }
+      revealApp();
+    } else if (meData?.status === 'approved') {
+      revealApp();
+    } else if (meData?.status === 'pending') {
+      document.getElementById('authModal').classList.remove('open');
+      showPending();
+    } else {
+      await auth.signOut();
+    }
+  } else {
+    me = null; meData = null;
+    updateUI();
+    // 게이트는 통과했지만 로그아웃 상태 -> 로그인 강제
+    if (sessionStorage.getItem('eh_gate') === '1') {
+      showLoginWall();
+    }
+  }
+});
+
+function updateUI() {
+  const li = !!me;
+  const isAdmin = me?.email === CFG.ADMIN_EMAIL;
+  document.getElementById('btnLogin').style.display   = li ? 'none' : '';
+  document.getElementById('btnLogout').style.display  = li ? '' : 'none';
+  document.getElementById('btnAdmin').style.display   = isAdmin ? '' : 'none';
+  document.getElementById('tabAdmin').style.display   = isAdmin ? '' : 'none';
+  document.getElementById('userChip').style.display   = li ? '' : 'none';
+  if (li && meData) document.getElementById('uName').textContent = meData.name || me.email.split('@')[0];
+}
+
+function showPending() {
+  hide('pageVideo'); hide('pageShorts'); hide('pageAdmin');
+  show('pending-screen');
+}
+
+// ══ Auth modal ══
+function openAuth()  { document.getElementById('authModal').classList.add('open'); }
+function closeAuth() { document.getElementById('authModal').classList.remove('open'); }
+document.getElementById('authModal').onclick = e => { if(e.target===document.getElementById('authModal')) closeAuth(); };
+
+function authTab(t, btn) {
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('pLogin').style.display = t === 'login' ? '' : 'none';
+  document.getElementById('pReg').style.display   = t === 'reg'   ? '' : 'none';
+}
+
+async function doLogin() {
+  const email = v('lEmail'), pw = v('lPw');
+  const msg = document.getElementById('lMsg');
+  msg.className = 'auth-msg'; msg.textContent = '로그인 중...';
+  try {
+    const c = await auth.signInWithEmailAndPassword(email, pw);
+    const s = await db.ref('users/'+c.user.uid).once('value');
+    const d = s.val();
+    // 관리자 이메일은 DB 없어도 바로 통과
+    if (email === CFG.ADMIN_EMAIL) {
+      // DB에 관리자 정보 없으면 자동 생성
+      if (!d) {
+        await db.ref('users/' + c.user.uid).set({
+          email: email, name: 'Eric', status: 'admin', createdAt: Date.now()
+        });
+      }
+      msg.className = 'auth-msg ok'; msg.textContent = '로그인 성공!';
+      return;
+    }
+    if (!d) { await auth.signOut(); throw new Error('계정 정보 없음'); }
+    if (d.status !== 'approved') {
+      await auth.signOut();
+      msg.className = 'auth-msg err';
+      msg.textContent = d.status === 'pending' ? '아직 승인 대기 중입니다' : '접근이 차단된 계정입니다';
+      return;
+    }
+    msg.className = 'auth-msg ok'; msg.textContent = '로그인 성공!';
+    // onAuthStateChanged가 revealApp() 호출함
+  } catch(e) {
+    msg.className = 'auth-msg err';
+    msg.textContent = e.code === 'auth/wrong-password' ? '비밀번호 오류'
+                    : e.code === 'auth/user-not-found' ? '존재하지 않는 계정'
+                    : e.message;
+  }
+}
+
+async function doRegister() {
+  const email = v('rEmail'), name = v('rName'), pw = v('rPw');
+  const msg = document.getElementById('rMsg');
+  if (!email||!name||!pw) { msg.className='auth-msg err'; msg.textContent='모두 입력해주세요'; return; }
+  msg.className='auth-msg'; msg.textContent='처리 중...';
+  try {
+    const c = await auth.createUserWithEmailAndPassword(email, pw);
+    const status = email === CFG.ADMIN_EMAIL ? 'admin' : 'pending';
+    await db.ref('users/'+c.user.uid).set({ email, name, status, createdAt: Date.now() });
+    await auth.signOut();
+    msg.className = 'auth-msg ok';
+    msg.textContent = status === 'admin' ? '관리자 등록 완료!' : '신청 완료! 관리자 승인 후 이용 가능합니다.';
+  } catch(e) {
+    msg.className = 'auth-msg err';
+    msg.textContent = e.code === 'auth/email-already-in-use' ? '이미 사용 중인 이메일' : e.message;
+  }
+}
+
+function doLogout() {
+  auth.signOut();
+  clearGrids();
+  // 로그아웃 후 로그인 벽 다시 표시 (onAuthStateChanged가 처리)
+}
+
+// ══ Tab switch ══
+function switchTab(t, btn) {
+  curTab = t;
+  document.querySelectorAll('.ntab').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  hide('pageVideo'); hide('pageShorts'); hide('pageAdmin'); hide('pending-screen');
+  if (t === 'video')  show('pageVideo');
+  if (t === 'shorts') show('pageShorts');
+  if (t === 'admin')  { show('pageAdmin'); loadAdmin(); }
+}
+
+function goAdmin() { switchTab('admin', document.getElementById('tabAdmin')); }
+
+// ══ Search ══
+function doSearch() {
+  if (!me) { openAuth(); return; }
+  if (meData?.status === 'pending') { alert('승인 대기 중입니다.'); return; }
+  const q = v('searchInput').trim();
+  if (!q) return;
+  if (curTab === 'video' || curTab === 'admin') {
+    lastVQuery = q; vPageTokens = ['']; vPage = 0;
+    fetchVideos(q, '');
+  } else if (curTab === 'shorts') {
+    lastSQuery = q; sPageTokens = ['']; sPage = 0;
+    fetchShorts(q, '');
+  }
+}
+
+async function fetchVideos(q, pageToken) {
+  const hint = document.getElementById('vHint');
+  const load = document.getElementById('vLoad');
+  const grid = document.getElementById('vGrid');
+  const pgn  = document.getElementById('vPgn');
+  const trend= document.getElementById('vTrend');
+
+  hint.style.display  = 'none';
+  trend.style.display = 'none';
+  load.style.display  = 'block';
+  grid.innerHTML = '';
+  pgn.style.display = 'none';
+
+  try {
+    const url = `${CFG.WORKER_URL}/search?q=${encodeURIComponent(q)}&maxResults=24&type=video&order=relevance${pageToken?'&pageToken='+pageToken:''}`;
+    const data = await apiFetch(url);
+    load.style.display = 'none';
+    if (data.error) { grid.innerHTML = `<p style="color:var(--accent);padding:20px">${data.error.message}</p>`; return; }
+    renderCards(data.items || [], grid, false);
+    handlePagination(data, 'v');
+  } catch(e) {
+    load.style.display = 'none';
+    grid.innerHTML = `<p style="color:var(--accent);padding:20px">오류: ${e.message}</p>`;
+  }
+}
+
+async function fetchShorts(q, pageToken) {
+  const hint = document.getElementById('sHint');
+  const load = document.getElementById('sLoad');
+  const grid = document.getElementById('sGrid');
+  const pgn  = document.getElementById('sPgn');
+
+  hint.style.display = 'none';
+  load.style.display = 'block';
+  grid.innerHTML = '';
+  pgn.style.display = 'none';
+
+  try {
+    const url = `${CFG.WORKER_URL}/search?q=${encodeURIComponent(q)}&maxResults=24&type=short${pageToken?'&pageToken='+pageToken:''}`;
+    const data = await apiFetch(url);
+    load.style.display = 'none';
+    if (data.error) { grid.innerHTML = `<p style="color:var(--accent);padding:20px">${data.error.message}</p>`; return; }
+    renderCards(data.items || [], grid, true);
+    handlePagination(data, 's');
+  } catch(e) {
+    load.style.display = 'none';
+    grid.innerHTML = `<p style="color:var(--accent);padding:20px">오류: ${e.message}</p>`;
+  }
+}
+
+async function loadTrending() {
+  try {
+    const url = `${CFG.WORKER_URL}/trending?maxResults=12`;
+    const data = await apiFetch(url);
+    const grid = document.getElementById('trendGrid');
+    if (!data.items?.length) return;
+    // trending uses /videos endpoint (different structure)
+    const items = data.items.map(it => ({
+      id: { videoId: it.id },
+      snippet: it.snippet,
+      _views: it.statistics?.viewCount
+    }));
+    renderCards(items, grid, false);
+    document.getElementById('vTrend').style.display = 'block';
+  } catch(e) { /* silent */ }
+}
+
+function handlePagination(data, prefix) {
+  if (prefix === 'v') {
+    if (data.nextPageToken) {
+      if (vPageTokens.length <= vPage+1) vPageTokens.push(data.nextPageToken);
+    }
+    document.getElementById('vPgn').style.display = 'flex';
+    document.getElementById('vPrev').disabled = vPage === 0;
+    document.getElementById('vNext').disabled = !data.nextPageToken;
+  } else {
+    if (data.nextPageToken) {
+      if (sPageTokens.length <= sPage+1) sPageTokens.push(data.nextPageToken);
+    }
+    document.getElementById('sPgn').style.display = 'flex';
+    document.getElementById('sPrev').disabled = sPage === 0;
+    document.getElementById('sNext').disabled = !data.nextPageToken;
+  }
+}
+
+function changePage(dir, prefix) {
+  if (!prefix) {
+    vPage = Math.max(0, vPage + dir);
+    fetchVideos(lastVQuery, vPageTokens[vPage] || '');
+  } else {
+    sPage = Math.max(0, sPage + dir);
+    fetchShorts(lastSQuery, sPageTokens[sPage] || '');
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ══ Render cards ══
+function renderCards(items, grid, isShort) {
+  if (!items.length) {
+    grid.innerHTML = '<p style="color:var(--text2);padding:20px;font-size:13px">결과 없음</p>';
+    return;
+  }
+  items.forEach(item => {
+    const vid     = item.id?.videoId || item.id;
+    const snippet = item.snippet;
+    const title   = snippet.title;
+    const channel = snippet.channelTitle;
+    const thumb   = isShort
+      ? `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`
+      : (snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url);
+    const views   = item._views ? fmtNum(item._views)+'회' : '';
+
+    const card = document.createElement('div');
+    card.className = 'vcard';
+    card.innerHTML = `
+      <div class="vthumb${isShort?' shorts':''}">
+        <img src="${thumb}" alt="" loading="lazy" onerror="this.style.opacity='.3'">
+        <div class="play-ov">
+          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="28" cy="28" r="28" fill="rgba(230,57,70,.88)"/>
+            <polygon points="22,16 44,28 22,40" fill="white"/>
+          </svg>
+        </div>
+      </div>
+      <div class="vinfo">
+        <div class="vtitle">${esc(title)}</div>
+        <div class="vmeta">${esc(channel)}</div>
+        ${views ? `<div class="vviews">👁 ${views}</div>` : ''}
+      </div>`;
+    card.onclick = () => openPlayer(vid, title, channel);
+    grid.appendChild(card);
+  });
+}
+
+// ══ Player ══
+function openPlayer(id, title, ch) {
+  document.getElementById('ytFrame').src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+  document.getElementById('pTitle').textContent = title;
+  document.getElementById('pCh').textContent    = ch;
+  document.getElementById('player-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePlayer() {
+  document.getElementById('ytFrame').src = '';
+  document.getElementById('player-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('player-modal').onclick = e => {
+  if (e.target === document.getElementById('player-modal')) closePlayer();
+};
+
+// ══ Admin ══
+async function loadAdmin() {
+  // load api key
+  const ks = await db.ref('settings/ytApiKey').once('value');
+  if (ks.val()) {
+    document.getElementById('apiKeyInput').value = ks.val();
+    document.getElementById('apiSt').textContent = '✅ 저장된 키 있음';
+    document.getElementById('apiSt').style.color = 'var(--success)';
+  }
+
+  const snap = await db.ref('users').once('value');
+  const users = snap.val() || {};
+
+  const pendList = document.getElementById('pendList');
+  const allList  = document.getElementById('allList');
+  pendList.innerHTML = '';
+  allList.innerHTML  = '';
+
+  let pc = 0;
+  Object.entries(users).forEach(([uid, u]) => {
+    allList.appendChild(makeMRow(uid, u));
+    if (u.status === 'pending') { pendList.appendChild(makeMRow(uid, u)); pc++; }
+  });
+
+  document.getElementById('pendBadge').textContent = pc ? `(${pc})` : '';
+  if (!pc) pendList.innerHTML = '<div class="empty-msg">대기 중인 회원 없음</div>';
+  if (!Object.keys(users).length) allList.innerHTML = '<div class="empty-msg">멤버 없음</div>';
+}
+
+function makeMRow(uid, u) {
+  const div = document.createElement('div');
+  div.className = 'mrow';
+  const bl = { admin:'b-admin', approved:'b-approved', pending:'b-pending', denied:'b-denied' }[u.status] || 'b-denied';
+  const bl_label = { admin:'관리자', approved:'승인됨', pending:'대기중', denied:'차단됨' }[u.status] || u.status;
+  div.innerHTML = `
+    <div class="mname">${esc(u.name||'')}<br><span class="memail">${esc(u.email||'')}</span></div>
+    <span class="mbadge ${bl}">${bl_label}</span>
+    <div class="mbts">
+      ${u.status==='pending' ? `<button class="mbt mbt-ok" onclick="setStatus('${uid}','approved')">승인</button><button class="mbt mbt-del" onclick="setStatus('${uid}','denied')">거절</button>` : ''}
+      ${u.status==='approved'? `<button class="mbt mbt-del" onclick="setStatus('${uid}','denied')">차단</button>` : ''}
+      ${u.status==='denied'  ? `<button class="mbt mbt-ok" onclick="setStatus('${uid}','approved')">복구</button>` : ''}
+    </div>`;
+  return div;
+}
+
+async function setStatus(uid, status) {
+  await db.ref('users/'+uid+'/status').set(status);
+  loadAdmin();
+}
+
+async function saveApiKey() {
+  const k = v('apiKeyInput');
+  if (!k) return;
+  await db.ref('settings/ytApiKey').set(k);
+  document.getElementById('apiSt').textContent = '✅ 저장 완료!';
+  document.getElementById('apiSt').style.color = 'var(--success)';
+}
+
+// ══ Util ══
+async function apiFetch(url) {
+  const r = await fetch(url);
+  return r.json();
+}
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function show(id) { const e=document.getElementById(id); if(e) e.style.display=''; }
+function hide(id) { const e=document.getElementById(id); if(e) e.style.display='none'; }
+function fmtNum(n) {
+  n = Number(n);
+  if (n >= 100000000) return (n/100000000).toFixed(1)+'억';
+  if (n >= 10000)     return Math.floor(n/10000)+'만';
+  if (n >= 1000)      return (n/1000).toFixed(1)+'천';
+  return String(n);
+}
+function clearGrids() {
+  ['vGrid','sGrid','trendGrid'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.innerHTML = '';
+  });
+}
+</script>
+</body>
+</html>
